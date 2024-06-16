@@ -1,3 +1,7 @@
+/*
+Basic network stack implementation for :
+handling Ethernet, ARP, IPv4, UDP, TCP, ICMP protocols
+*/
 #pragma once
 #include <Net/If.h>
 

@@ -1,3 +1,8 @@
+/*
+Provides a set of definitions and structures 
+for configuring and managing network interfaces 
+through ioctl system calls
+*/
 #pragma once
 #include <stdint.h>
 
@@ -5,6 +10,7 @@
 #include <abi-bits/socket.h>
 
 #define IF_NAMESIZE 16
+#define IFNAMSIZ IF_NAMESIZE
 
 #define SIOCADDRT 0x890B
 #define SIOCDELRT 0x890C
@@ -44,9 +50,6 @@
 #define SIOCSIFHWBROADCAST 0x8937
 #define SIOCGIFCOUNT 0x8938
 
-#define IF_NAMESIZE 16
-#define IFNAMSIZ IF_NAMESIZE
-
 typedef struct sockaddr {
 	sa_family_t family;
 	char data[14];
@@ -59,7 +62,7 @@ struct ifmap {
 	unsigned char irq;
 	unsigned char dma;
 	unsigned char port;
-};
+};//Describes the memory mapping and hardware resources of network devices
 
 struct ifreq {
 	char ifr_name[IFNAMSIZ];
@@ -77,5 +80,5 @@ struct ifreq {
 		char ifr_slave[IFNAMSIZ];
 		char ifr_newname[IFNAMSIZ];
 		char* ifr_data;
-	};
+	};//Common network interface request structure
 };

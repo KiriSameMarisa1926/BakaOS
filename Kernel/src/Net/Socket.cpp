@@ -25,15 +25,17 @@ int Socket::CreateSocket(int domain, int type, int protocol, Socket** sock) {
     if (domain == UnixDomain) {
         *sock = new LocalSocket(type, protocol);
         return 0;
-    } else if (domain == InternetProtocol) {
+    } 
+    else if (domain == InternetProtocol) {
         if (type == DatagramSocket) {
             *sock = new Network::UDP::UDPSocket(type, protocol);
             return 0;
-        } else if (type == StreamSocket) {
+        } 
+        else if (type == StreamSocket) {
             *sock = new Network::TCP::TCPSocket(type, protocol);
             return 0;
         }
-    }
+    }//Create a socket with its type
 
     return -EINVAL;
 }
@@ -66,8 +68,8 @@ int Socket::Connect(const sockaddr* addr, socklen_t addrlen) {
 }
 
 int Socket::Listen(int backlog) {
-    return -EOPNOTSUPP; // If Listen has not been implemented assume that the socket is not connection-oriented
-}
+    return -EOPNOTSUPP; 
+}//If Listen has not been implemented assume that the socket is not connection-oriented
 
 ssize_t Socket::Read(size_t offset, size_t size, uint8_t* buffer) { return Receive(buffer, size, 0); }
 
@@ -138,6 +140,7 @@ void Socket::Close() {}
 void Socket::Watch(FilesystemWatcher& watcher, int events) { assert(!"Socket::Watch called from socket base"); }
 
 void Socket::Unwatch(FilesystemWatcher& watcher) { assert(!"Socket::Unwatch called from socket base"); }
+
 
 LocalSocket::LocalSocket(int type, int protocol) : Socket(type, protocol) {
     domain = UnixDomain;

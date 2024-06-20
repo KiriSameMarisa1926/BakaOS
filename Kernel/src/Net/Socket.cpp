@@ -25,7 +25,7 @@ int Socket::CreateSocket(int domain, int type, int protocol, Socket** sock) {
     if (domain == UnixDomain) {
         *sock = new LocalSocket(type, protocol);
         return 0;
-    } 
+    }
     else if (domain == InternetProtocol) {
         if (type == DatagramSocket) {
             *sock = new Network::UDP::UDPSocket(type, protocol);
@@ -193,26 +193,26 @@ LocalSocket* LocalSocket::CreatePairedSocket(LocalSocket* client) {
 }
 
 int LocalSocket::ConnectTo(LocalSocket* client) {
-    assert(passive);
+    assert(passive);// Verify that the current socket is passive
 
     if (pendingConnections.Wait()) {
         return -EINTR;
-    }
+    }// Wait for a connection request signal
 
-    pending.add_back(client);
+    pending.add_back(client);// Add the client to the pending connection queue
 
     acquireLock(&m_watcherLock);
     while (m_watching.get_length()) {
         m_watching.remove_at(0)->Signal();
-    }
+    }// Notify all monitors
     releaseLock(&m_watcherLock);
 
     while (!client->m_connected) {
         // TODO: Actually block the task
         Scheduler::Yield();
-    }
+    }// Wait for the client connection to complete
 
-    pendingConnections.Signal();
+    pendingConnections.Signal();// Send a connection request signal
 
     return 0;
 }

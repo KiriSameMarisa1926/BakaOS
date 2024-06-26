@@ -11,6 +11,29 @@ namespace Network::UDP{
     lock_t socketsLock = 0;
     uint16_t nextEphemeralPort = EPHEMERAL_PORT_RANGE_START;
 
+    unsigned short AllocatePort(UDPSocket* sock) {
+        unsigned short port = EPHEMERAL_PORT_RANGE_START;
+        ScopedSpinLock lockSockets(socketsLock);
+
+        if (nextEphemeralPort < PORT_MAX) {
+            port = nextEphemeralPort++;
+
+            if (AcquirePortUnlocked(sock, port)) {
+                port = 0;
+            }
+        }
+        else {
+            while (port < EPHEMERAL_PORT_RANGE_END && AcquirePortUnlocked(sock, port)) port++;
+        }
+
+        if (port > EPHEMERAL_PORT_RANGE_END || port <= 0) {
+            Log::Warning("[Network] Could not allocate ephemeral port!");
+            return 0;
+        }
+
+        return port;
+    }
+
     Socket* FindSocket(BigEndian<uint16_t> port){
         ScopedSpinLock lockSockets(socketsLock);
         UDPSocket* sock = nullptr;
@@ -20,6 +43,11 @@ namespace Network::UDP{
         }
 
         return sock;
+    }
+
+    int AcquirePort(UDPSocket* sock, unsigned int port) {
+        ScopedSpinLock lockSockets(socketsLock);
+        return AcquirePortUnlocked(sock, port);
     }
 
     int AcquirePortUnlocked(UDPSocket* sock, unsigned int port){
@@ -36,33 +64,6 @@ namespace Network::UDP{
         sockets.insert(port, sock);
         
         return 0;
-    }
-
-    int AcquirePort(UDPSocket* sock, unsigned int port){
-        ScopedSpinLock lockSockets(socketsLock);
-        return AcquirePortUnlocked(sock, port);
-    }
-
-    unsigned short AllocatePort(UDPSocket* sock){
-        unsigned short port = EPHEMERAL_PORT_RANGE_START;
-        ScopedSpinLock lockSockets(socketsLock);
-
-        if(nextEphemeralPort < PORT_MAX){
-            port = nextEphemeralPort++;
-            
-            if(AcquirePortUnlocked(sock, port)){
-                port = 0;
-            }
-        } else {
-            while(port < EPHEMERAL_PORT_RANGE_END && AcquirePortUnlocked(sock, port)) port++;
-        }
-
-        if(port > EPHEMERAL_PORT_RANGE_END || port <= 0){
-            Log::Warning("[Network] Could not allocate ephemeral port!");
-            return 0;
-        }
-
-        return port;
     }
 
     int ReleasePort(unsigned short port){
@@ -193,7 +194,7 @@ namespace Network::UDP{
         if(packets.get_length() <= 0){
             releaseLock(&packetsLock);
             if(flags & MSG_DONTWAIT){
-                return -EAGAIN; // Don't wait
+                return -EAGAIN; // No data now,don't wait
             } else if(FilesystemBlocker bl(this); Thread::Current()->Block(&bl)){
                 return -EINTR; // We were interrupted
             }
@@ -214,7 +215,7 @@ namespace Network::UDP{
         }
 
         size_t finalLength = MIN(len, pkt.length);
-        memcpy(buffer, pkt.data, finalLength);
+        memcpy(buffer, pkt.data, finalLength);//Copy data to buffer
 
         delete[] pkt.data; // Free buffer
 
